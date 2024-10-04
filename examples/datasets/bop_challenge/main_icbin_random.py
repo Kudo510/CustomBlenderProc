@@ -15,16 +15,16 @@ bproc.init()
 # load bop objects into the scene
 target_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(args.bop_parent_path, 'icbin'), mm2m = True)
 
-# load distractor bop objects
-tless_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(args.bop_parent_path, 'tless'), model_type = 'cad', mm2m = True)
-ycbv_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(args.bop_parent_path, 'ycbv'), mm2m = True)
-hb_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(args.bop_parent_path, 'hb'), mm2m = True)
+# # load distractor bop objects
+# tless_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(args.bop_parent_path, 'icbin'), model_type = 'cad', mm2m = True)
+# ycbv_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(args.bop_parent_path, 'icbin'), mm2m = True)
+# hb_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(args.bop_parent_path, 'icbin'), mm2m = True)
 
 # load BOP datset intrinsics
 bproc.loader.load_bop_intrinsics(bop_dataset_path = os.path.join(args.bop_parent_path, 'icbin'))
 
 # set shading and hide objects
-for obj in (target_bop_objs + tless_dist_bop_objs + ycbv_dist_bop_objs + hb_dist_bop_objs):
+for obj in (target_bop_objs):#  + tless_dist_bop_objs + ycbv_dist_bop_objs + hb_dist_bop_objs)
     obj.set_shading_mode('auto')
     obj.hide(True)
     
@@ -61,19 +61,19 @@ bproc.renderer.set_max_amount_of_samples(50)
 for i in range(args.num_scenes):
 
     # Sample bop objects for a scene
-    sampled_target_bop_objs = list(np.random.choice(target_bop_objs, size=20, replace=False))
-    sampled_distractor_bop_objs = list(np.random.choice(tless_dist_bop_objs, size=2, replace=False))
-    sampled_distractor_bop_objs += list(np.random.choice(ycbv_dist_bop_objs, size=2, replace=False))
-    sampled_distractor_bop_objs += list(np.random.choice(hb_dist_bop_objs, size=2, replace=False))
+    sampled_target_bop_objs = list(np.random.choice(target_bop_objs, size=7, replace=False))
+    # sampled_distractor_bop_objs = list(np.random.choice(tless_dist_bop_objs, size=2, replace=False))
+    # sampled_distractor_bop_objs += list(np.random.choice(ycbv_dist_bop_objs, size=2, replace=False))
+    # sampled_distractor_bop_objs += list(np.random.choice(hb_dist_bop_objs, size=2, replace=False))
 
     # Randomize materials and set physics
-    for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs):        
+    for obj in (sampled_target_bop_objs): # + sampled_distractor_bop_objs):        
         mat = obj.get_materials()[0]
         if obj.get_cp("bop_dataset_name") in ['itodd', 'tless']:
             grey_col = np.random.uniform(0.1, 0.9)   
             mat.set_principled_shader_value("Base Color", [grey_col, grey_col, grey_col, 1])        
         mat.set_principled_shader_value("Roughness", np.random.uniform(0, 1.0))
-        mat.set_principled_shader_value("Specular IOR Level", np.random.uniform(0, 1.0))
+#        mat.set_principled_shader_value("Specular IOR Level", np.random.uniform(0, 1.0))
         obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99)
         obj.hide(False)
     
@@ -93,7 +93,7 @@ for i in range(args.num_scenes):
 
 
     # Sample object poses and check collisions 
-    bproc.object.sample_poses(objects_to_sample = sampled_target_bop_objs + sampled_distractor_bop_objs,
+    bproc.object.sample_poses(objects_to_sample = sampled_target_bop_objs, # + sampled_distractor_bop_objs,
                             sample_pose_func = sample_pose_func, 
                             max_tries = 1000)
             
@@ -105,10 +105,10 @@ for i in range(args.num_scenes):
                                                     solver_iters=25)
 
     # BVH tree used for camera obstacle checks
-    bop_bvh_tree = bproc.object.create_bvh_tree_multi_objects(sampled_target_bop_objs + sampled_distractor_bop_objs)
+    bop_bvh_tree = bproc.object.create_bvh_tree_multi_objects(sampled_target_bop_objs)# + sampled_distractor_bop_objs)
 
     cam_poses = 0
-    while cam_poses < 25:
+    while cam_poses < 3:
         # Sample location
         location = bproc.sampler.shell(center = [0, 0, 0],
                                 radius_min = 0.45,
@@ -116,7 +116,7 @@ for i in range(args.num_scenes):
                                 elevation_min = 5,
                                 elevation_max = 89)
         # Determine point of interest in scene as the object closest to the mean of a subset of objects
-        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=15, replace=False))
+        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=7, replace=False))
         # Compute rotation based on vector going from location towards poi
         rotation_matrix = bproc.camera.rotation_from_forward_vec(poi - location, inplane_rot=np.random.uniform(-3.14159, 3.14159))
         # Add homog cam pose based on location an rotation
@@ -141,6 +141,6 @@ for i in range(args.num_scenes):
                            color_file_format = "JPEG",
                            ignore_dist_thres = 10)
     
-    for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs):      
+    for obj in (sampled_target_bop_objs):# + sampled_distractor_bop_objs):      
         obj.disable_rigidbody()
         obj.hide(True)
